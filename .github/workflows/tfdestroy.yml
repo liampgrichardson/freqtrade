@@ -1,0 +1,40 @@
+name: Terraform Destroy
+
+on:
+  workflow_dispatch: # Allows you to manually trigger the workflow
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    environment: aws
+
+    # Define environment variables at the job level
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Step 1: Set up Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      # Step 2: Initialize Terraform
+      - name: Initialize Terraform
+        run: |
+          cd terraform
+          terraform init
+
+      # Step 3: Destroy Terraform resources
+      - name: Destroy Terraform resources
+        env:
+          TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
+          TF_VAR_ecr_repository_name: ${{ secrets.ECR_REPOSITORY_NAME }}
+          TF_VAR_image_tag: $(terraform output -raw image_tag)  # Fetch image_tag from deployment
+        run: |
+          cd terraform
+          terraform destroy -auto-approve

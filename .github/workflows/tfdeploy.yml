@@ -1,0 +1,58 @@
+name: Terraform Deploy
+
+on:
+  workflow_dispatch: # Allows you to manually trigger the workflow
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    environment: aws
+
+    # Define environment variables at the job level
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, tag, and push db_updater image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+        IMAGE_TAG: ${{ github.sha }}  # Use the commit SHA for unique tagging
+      run: |
+        cd application
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # Step 2: Set up Terraform
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+
+    - name: Initialize Terraform
+      run: |
+        cd terraform
+        terraform init
+
+    - name: Plan Terraform changes
+      env:
+        TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
+        TF_VAR_ecr_repository_name: ${{ secrets.ECR_REPOSITORY_NAME }}
+        TF_VAR_image_tag: ${{ github.sha }}  # Pass the image tag
+      run: |
+        cd terraform
+        terraform plan -out=tfplan
+
+    - name: Apply Terraform changes
+      run: |
+        cd terraform
+        terraform apply tfplan
