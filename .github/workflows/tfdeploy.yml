@@ -30,29 +30,40 @@ jobs:
         ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
         IMAGE_TAG: ${{ github.sha }}  # Use the commit SHA for unique tagging
       run: |
-        cd application
+        cd db_updater
+        cd app
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      # Step 2: Set up Terraform
+    # Step: Set up Terraform
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.3.0
 
-    - name: Initialize Terraform
-      run: |
-        cd terraform
-        terraform init
+    # Step: Terraform Init and Apply (Provisions EC2)
+    - name: Terraform Init
+      run: terraform init
 
-    - name: Plan Terraform changes
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
       env:
-        TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
-        TF_VAR_ecr_repository_name: ${{ secrets.ECR_REPOSITORY_NAME }}
-        TF_VAR_image_tag: ${{ github.sha }}  # Pass the image tag
-      run: |
-        cd terraform
-        terraform plan -out=tfplan
+        TF_VAR_ec2_ssh_public_key: ${{ secrets.EC2_SSH_PUBLIC_KEY }}
 
-    - name: Apply Terraform changes
-      run: |
-        cd terraform
-        terraform apply tfplan
+    # Step: Deploy Docker using Appleboy SSH Action (Direct Terraform Output)
+    - name: Deploy Docker on EC2
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: $(terraform output -raw public_ip)
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        script: |
+          sudo apt update -y
+          sudo apt install -y docker.io
+          sudo systemctl start docker
+          
+          # Login to Amazon ECR
+          aws ecr get-login-password --region $AWS_REGION | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
+          
+          # Pull and run the Docker container
+          sudo docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
