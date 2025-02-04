@@ -11,4 +11,4 @@ COPY . .
 RUN pip install -r requirements.txt
 
 # Set the command to run your script
-CMD ["python", "test_api.py"]
+CMD ["python", "app.py"]
