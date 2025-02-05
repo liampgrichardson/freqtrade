@@ -109,9 +109,9 @@ jobs:
           sudo systemctl start docker
           
           # Verify Docker installation
-          docker --version
+          sudo docker --version
           # Verify Docker Compose installation
-          docker-compose --version
+          sudo docker-compose --version
           
           # Get freqtrade
           git clone --no-checkout "https://github.com/${{ github.repository }}.git"
@@ -119,8 +119,8 @@ jobs:
           git sparse-checkout init --cone
           git sparse-checkout set ft_userdata
           git checkout main
-          docker compose pull
-          docker compose up -d
+          sudo docker-compose pull
+          sudo docker-compose up -d
           
           # Install AWS CLI
           sudo apt-get install -y awscli
