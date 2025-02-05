@@ -60,8 +60,9 @@ jobs:
         cd terraform
         terraform apply tfplan
         echo "INSTANCE_IP=$(terraform output -raw ec2_private_ip)"
-        echo "EC2_INSTANCE_IP=$(terraform state show aws_instance.my_ec2 | grep "public_ip" | awk '{print $3}')"
-        echo "EC2_INSTANCE_IP_V2=$(terraform output -raw public_ip | tr -d '\n')"
+        echo "INSTANCE_IP_V2=$(terraform output ec2_private_ip)"
+        echo "EC2_INSTANCE_IP=$(terraform state show aws_instance.my_ec2 | grep "ec2_private_ip" | awk '{print $3}')"
+        echo "EC2_INSTANCE_IP_V2=$(terraform output -raw ec2_private_ip | tr -d '\n')"
         echo "EC2_INSTANCE_IP=$(EC2_INSTANCE_IP)" >> $GITHUB_ENV
         echo "EC2_INSTANCE_IP_V2=$(EC2_INSTANCE_IP_V2)" >> $GITHUB_ENV
 
