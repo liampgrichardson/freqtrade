@@ -15,6 +15,14 @@ terraform {
   }
 }
 
+# Enable DNS support for VPC
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+
+  enable_dns_support   = true   # Ensures instances can resolve domain names
+  enable_dns_hostnames = true   # Allows public DNS names for public instances
+}
+
 # Store the SSH Key Pair in AWS
 resource "aws_key_pair" "ec2_key" {
   key_name   = "github-actions-key"
@@ -35,11 +43,6 @@ data "aws_ami" "ubuntu" {
     name   = "architecture"
     values = ["x86_64"]
   }
-}
-
-# Create a VPC
-resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
 }
 
 # Create a Public Subnet
@@ -136,7 +139,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 resource "aws_instance" "my_ec2" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t2.micro"
-  subnet_id              = aws_subnet.public_subnet.id  # Changed to public subnet
+  subnet_id              = aws_subnet.public_subnet.id  # Public subnet
   key_name               = aws_key_pair.ec2_key.key_name
   security_groups        = [aws_security_group.ec2_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
