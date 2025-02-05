@@ -59,13 +59,13 @@ jobs:
       run: |
         cd terraform
         terraform apply tfplan
-
+        echo "INSTANCE_IP=$(terraform output -raw public_ip)" >> $GITHUB_ENV
 
     # Step: Deploy Docker using Appleboy SSH Action (Direct Terraform Output)
     - name: Deploy Docker on EC2
       uses: appleboy/ssh-action@v0.1.10
       with:
-        host: $(terraform output -raw public_ip)
+        host: ${{ env.INSTANCE_IP }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
