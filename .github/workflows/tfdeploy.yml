@@ -69,7 +69,7 @@ jobs:
       run: |
         echo "Waiting for the EC2 instance to pass status checks..."
         INSTANCE_ID=${{env.INSTANCE_ID}}
-        MAX_RETRIES=10
+        MAX_RETRIES=30
         RETRY_COUNT=0
         
         while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
