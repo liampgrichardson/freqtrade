@@ -65,29 +65,34 @@ jobs:
         echo "INSTANCE_ID=$(terraform-bin output -raw ec2_instance_id)" >> $GITHUB_ENV
 
     # Step: Wait for the EC2 instance to be in the "running" state
-    - name: Wait for EC2 instance to be running
+    - name: Wait for EC2 instance to be ready
       run: |
-        echo "Waiting for the EC2 instance to be in the 'running' state..."
+        echo "Waiting for the EC2 instance to pass status checks..."
         INSTANCE_ID=$(env.INSTANCE_ID)
         MAX_RETRIES=10
         RETRY_COUNT=0
         
         while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
           INSTANCE_STATE=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query "Reservations[0].Instances[0].State.Name" --output text)
+          INSTANCE_STATUS=$(aws ec2 describe-instance-status --instance-ids $INSTANCE_ID --query "InstanceStatuses[0].InstanceStatus.Status" --output text)
+          SYSTEM_STATUS=$(aws ec2 describe-instance-status --instance-ids $INSTANCE_ID --query "InstanceStatuses[0].SystemStatus.Status" --output text)
+
           echo "Current instance state: $INSTANCE_STATE"
-          
-          if [ "$INSTANCE_STATE" == "running" ]; then
-            echo "EC2 instance is running!"
+          echo "Instance status: $INSTANCE_STATUS"
+          echo "System status: $SYSTEM_STATUS"
+
+          if [ "$INSTANCE_STATE" == "running" ] && [ "$INSTANCE_STATUS" == "ok" ] && [ "$SYSTEM_STATUS" == "ok" ]; then
+            echo "EC2 instance is fully ready!"
             exit 0
           fi
-          
-          echo "Instance is not ready yet. Retrying in 30 seconds... ($((RETRY_COUNT+1))/$MAX_RETRIES)"
-          sleep 30
+
+          echo "Instance is not ready yet. Retrying in 5 seconds... ($((RETRY_COUNT+1))/$MAX_RETRIES)"
+          sleep 5
           RETRY_COUNT=$((RETRY_COUNT+1))
         done
 
-        echo "ERROR: EC2 instance did not start within the expected time."
-        exit 1  # Fail the workflow if the instance is still not running
+        echo "ERROR: EC2 instance did not become fully ready within the expected time."
+        exit 1  # Fail the workflow if the instance is not fully ready
 
     # Step: Deploy Docker on EC2
     - name: Deploy Docker on EC2
