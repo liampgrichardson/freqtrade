@@ -115,10 +115,8 @@ jobs:
           
           # Get freqtrade
           git clone --no-checkout "https://github.com/${{ github.repository }}.git"
-          git sparse-checkout init --cone
-          git sparse-checkout set ft_userdata
           git checkout main
-          cd freqtrade/ft_userdata
+          cd freqtrade/ft_userdata/
           sudo docker-compose pull
           sudo docker-compose up -d
           
