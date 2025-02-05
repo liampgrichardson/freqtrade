@@ -118,7 +118,7 @@ jobs:
           git sparse-checkout init --cone
           git sparse-checkout set ft_userdata
           git checkout main
-          cd ft_userdata
+          cd freqtrade/ft_userdata
           sudo docker-compose pull
           sudo docker-compose up -d
           
