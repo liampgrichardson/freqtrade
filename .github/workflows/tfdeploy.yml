@@ -63,7 +63,32 @@ jobs:
         echo "INSTANCE_PRIVATE_IP=$(terraform-bin output -raw ec2_private_ip)" >> $GITHUB_ENV
         echo "INSTANCE_PUBLIC_IP=$(terraform-bin output -raw ec2_public_ip)" >> $GITHUB_ENV
 
-    # Step: Deploy Docker using Appleboy SSH Action (Direct Terraform Output)
+    # Step: Wait for the EC2 instance to be in the "running" state
+    - name: Wait for EC2 instance to be running
+      run: |
+        echo "Waiting for the EC2 instance to be in the 'running' state..."
+        INSTANCE_ID=$(terraform output -raw ec2_instance_id)
+        MAX_RETRIES=10
+        RETRY_COUNT=0
+        
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          INSTANCE_STATE=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query "Reservations[0].Instances[0].State.Name" --output text)
+          echo "Current instance state: $INSTANCE_STATE"
+          
+          if [ "$INSTANCE_STATE" == "running" ]; then
+            echo "EC2 instance is running!"
+            exit 0
+          fi
+          
+          echo "Instance is not ready yet. Retrying in 30 seconds... ($((RETRY_COUNT+1))/$MAX_RETRIES)"
+          sleep 30
+          RETRY_COUNT=$((RETRY_COUNT+1))
+        done
+
+        echo "ERROR: EC2 instance did not start within the expected time."
+        exit 1  # Fail the workflow if the instance is still not running
+
+    # Step: Deploy Docker on EC2
     - name: Deploy Docker on EC2
       uses: appleboy/ssh-action@v0.1.10
       with:
