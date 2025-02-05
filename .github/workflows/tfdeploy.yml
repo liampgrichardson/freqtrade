@@ -65,15 +65,16 @@ jobs:
       id: echo
       run: |
 #        echo "output = ${ steps.tf-apply.outputs.ec2_private_ip }"
-        echo "INSTANCE_PRIVATE_IP=$(terraform-bin output -raw ec2_private_ip)"
+        echo "INSTANCE_PRIVATE_IP=$(terraform-bin output -raw ec2_private_ip)" >> $GITHUB_ENV
 #        echo "output_V2 = ${ steps.tf-apply.outputs.ec2_public_ip }"
-        echo "INSTANCE_PUBLIC_IP=$(terraform-bin output -raw ec2_public_ip)"
+        echo "INSTANCE_PUBLIC_IP=$(terraform-bin output -raw ec2_public_ip)" >> $GITHUB_ENV
 
     # Step: Deploy Docker using Appleboy SSH Action (Direct Terraform Output)
     - name: Deploy Docker on EC2
       uses: appleboy/ssh-action@v0.1.10
       with:
-        host: ${{ env.INSTANCE_PUBLIC_IP }}
+#        host: ${{ env.INSTANCE_IP }}
+        host: ${{ steps.tf-apply.outputs.ec2_private_ip }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
