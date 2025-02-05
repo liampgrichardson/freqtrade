@@ -60,8 +60,14 @@ jobs:
       run: |
         cd terraform
         terraform apply tfplan
-#        echo "INSTANCE_IP=$(terraform-bin output -raw ec2_private_ip)" >> $GITHUB_ENV
-        
+
+    - name: Echo
+      id: echo
+      run: |
+        echo "output = ${ steps.tf-apply.outputs.ec2_private_ip }"
+        echo "INSTANCE_IP=$(terraform-bin output -raw ec2_private_ip)"
+        echo "output_V2 = ${ steps.tf-apply.outputs.ec2_public_ip }"
+        echo "INSTANCE_IP_V2=$(terraform-bin output -raw ec2_public_ip)"
 
     # Step: Deploy Docker using Appleboy SSH Action (Direct Terraform Output)
     - name: Deploy Docker on EC2

@@ -162,3 +162,10 @@ output "ec2_private_ip" {
   value       = aws_instance.my_ec2.private_ip
   sensitive   = true
 }
+
+# Output the private IP of the EC2 instance
+output "ec2_public_ip" {
+  description = "The public IP address of the EC2 instance"
+  value       = aws_instance.my_ec2.public_ip
+  sensitive   = true
+}
