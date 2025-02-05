@@ -95,7 +95,7 @@ resource "aws_security_group" "ec2_sg" {
 
 # IAM Role for EC2 instance
 resource "aws_iam_role" "ec2_role" {
-  name = "ec2-timestream-role"
+  name = "ec2-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -126,6 +126,30 @@ resource "aws_iam_policy" "timestream_policy" {
 
 resource "aws_iam_role_policy_attachment" "timestream_attach" {
   policy_arn = aws_iam_policy.timestream_policy.arn
+  role       = aws_iam_role.ec2_role.name
+}
+
+# Attach policy for Amazon ECR access
+resource "aws_iam_policy" "ecr_policy" {
+  name        = "ECRAccessPolicy"
+  description = "Allows EC2 instance to pull images from Amazon ECR"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer"
+      ]
+      Resource = "*"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecr_attach" {
+  policy_arn = aws_iam_policy.ecr_policy.arn
   role       = aws_iam_role.ec2_role.name
 }
 
