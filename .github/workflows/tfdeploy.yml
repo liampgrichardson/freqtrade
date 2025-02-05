@@ -64,8 +64,14 @@ jobs:
     - name: Echo
       id: echo
       run: |
-        echo "INSTANCE_PRIVATE_IP=$(terraform-bin output -raw ec2_private_ip)" >> $GITHUB_ENV
-        echo "INSTANCE_PUBLIC_IP=$(terraform-bin output -raw ec2_public_ip)" >> $GITHUB_ENV
+        echo "INSTANCE_PRIVATE_IP=$(terraform-bin output ec2_private_ip)"
+        echo "INSTANCE_PUBLIC_IP=$(terraform-bin output ec2_public_ip)"
+        echo "INSTANCE_PRIVATE_IP=$(terraform-bin output ec2_private_ip)" >> $GITHUB_ENV
+        echo "INSTANCE_PUBLIC_IP=$(terraform-bin output ec2_public_ip)" >> $GITHUB_ENV
+        echo "INSTANCE_PRIVATE_IP_RAW=$(terraform-bin output -raw ec2_private_ip)"
+        echo "INSTANCE_PUBLIC_IP_RAW=$(terraform-bin output -raw ec2_public_ip)"
+        echo "INSTANCE_PRIVATE_IP_RAW=$(terraform-bin output -raw ec2_private_ip)" >> $GITHUB_ENV
+        echo "INSTANCE_PUBLIC_IP_RAW=$(terraform-bin output -raw ec2_public_ip)" >> $GITHUB_ENV
 #        echo "output = ${ steps.tf-apply.outputs.ec2_private_ip }"
 #        echo "output_V2 = ${ steps.tf-apply.outputs.ec2_public_ip }"
 
