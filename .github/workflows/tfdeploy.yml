@@ -74,7 +74,6 @@ jobs:
       uses: appleboy/ssh-action@v0.1.10
       with:
         host: ${{ env.INSTANCE_PUBLIC_IP }}
-#        host: ${{ steps.tf-apply.outputs.ec2_private_ip }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
