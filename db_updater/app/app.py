@@ -28,9 +28,9 @@ def main():
     # initialize freqtrade stuff
     freqtrade_client = FtRestClient("http://127.0.0.1:8080", "freqtrader", "1234")
     strategy = "SampleStrategy"
+    strategy_timeframe = freqtrade_client.strategy(strategy)["timeframe"]
     pair = "BTC/USDT"
     exchange = "Binance"
-    strategy_timeframe = freqtrade_client.strategy(strategy)["timeframe"]
 
     # Get the status of the bot (should print "pong" if ok)
     print(freqtrade_client.ping())
