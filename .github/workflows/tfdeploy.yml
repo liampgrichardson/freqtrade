@@ -102,14 +102,25 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
+          # Update and install Docker
           sudo apt update -y
           sudo apt install -y docker.io
           sudo systemctl start docker
+          
+          # Install AWS CLI
           sudo apt-get install -y awscli
+          
+          # Set environment variables
+          export AWS_REGION=${{ env.AWS_REGION }}
+          export ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
+          export ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY_NAME }}
+          export IMAGE_TAG=${{ github.sha }}
           
           # Login to Amazon ECR
           aws ecr get-login-password --region $AWS_REGION | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
           
           # Pull and run the Docker container
           sudo docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "done all"
+          sudo docker run -d $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          
+          echo "Docker container deployed successfully!"
