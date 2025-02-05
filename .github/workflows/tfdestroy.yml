@@ -34,7 +34,6 @@ jobs:
         env:
           TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
           TF_VAR_ec2_ssh_public_key: ${{ secrets.EC2_SSH_PUBLIC_KEY }}
-
         run: |
           cd terraform
           terraform destroy -auto-approve
