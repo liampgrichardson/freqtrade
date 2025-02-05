@@ -101,11 +101,15 @@ jobs:
         host: ${{ env.INSTANCE_PUBLIC_IP }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        debug: false  # Disable debug logging from appleboy
         script: |
           # Update and install Docker
           sudo apt update -y
           sudo apt install -y docker.io
           sudo systemctl start docker
+          
+          # Get freqtrade
+          
           
           # Install AWS CLI
           sudo apt-get install -y awscli
@@ -113,7 +117,7 @@ jobs:
           # Login to Amazon ECR
           aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
           
-          # Pull and run the Docker container
+          # Pull and run the db_updater image and container
           sudo docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
           sudo docker run -d ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
           
