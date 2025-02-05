@@ -33,8 +33,8 @@ jobs:
       - name: Destroy Terraform resources
         env:
           TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
-          TF_VAR_ecr_repository_name: ${{ secrets.ECR_REPOSITORY_NAME }}
-          TF_VAR_image_tag: $(terraform output -raw image_tag)  # Fetch image_tag from deployment
+          TF_VAR_ec2_ssh_public_key: ${{ secrets.EC2_SSH_PUBLIC_KEY }}
+
         run: |
           cd terraform
           terraform destroy -auto-approve
