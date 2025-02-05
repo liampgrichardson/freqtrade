@@ -67,3 +67,4 @@ jobs:
           
           # Pull and run the Docker container
           sudo docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "done all"
