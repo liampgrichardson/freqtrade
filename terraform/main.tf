@@ -118,7 +118,11 @@ resource "aws_iam_policy" "timestream_policy" {
     Version = "2012-10-17"
     Statement = [{
       Effect   = "Allow"
-      Action   = ["timestream:Select", "timestream:DescribeEndpoints"]
+      Action   = [
+        "timestream:Select",
+        "timestream:DescribeEndpoints",
+        "timestream:UpdateTable"
+      ]
       Resource = "*"
     }]
   })
