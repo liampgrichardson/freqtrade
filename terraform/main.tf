@@ -15,11 +15,6 @@ terraform {
   }
 }
 
-# Reference the existing ECR repository
-data "aws_ecr_repository" "existing_repository" {
-  name = var.ecr_repository_name # Variable received from GitHub Actions workflow
-}
-
 # Store the SSH Key Pair in AWS
 resource "aws_key_pair" "ec2_key" {
   key_name   = "github-actions-key"
@@ -165,12 +160,5 @@ resource "aws_instance" "my_ec2" {
 output "ec2_private_ip" {
   description = "The private IP address of the EC2 instance"
   value       = aws_instance.my_ec2.private_ip
-  sensitive   = true
-}
-
-# Output the image tag
-output "image_tag" {
-  description = "The image tag for the deployed application"
-  value       = var.image_tag
   sensitive   = true
 }
