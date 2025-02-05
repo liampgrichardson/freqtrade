@@ -68,7 +68,7 @@ jobs:
     - name: Wait for EC2 instance to be ready
       run: |
         echo "Waiting for the EC2 instance to pass status checks..."
-        INSTANCE_ID=$(env.INSTANCE_ID)
+        INSTANCE_ID=${{env.INSTANCE_ID}}
         MAX_RETRIES=10
         RETRY_COUNT=0
         
