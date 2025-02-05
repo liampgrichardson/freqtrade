@@ -121,7 +121,8 @@ resource "aws_iam_policy" "timestream_policy" {
       Action   = [
         "timestream:Select",
         "timestream:DescribeEndpoints",
-        "timestream:UpdateTable"
+        "timestream:UpdateTable",
+        "timestream:WriteRecords"
       ]
       Resource = "*"
     }]
