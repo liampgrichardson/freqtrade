@@ -110,17 +110,11 @@ jobs:
           # Install AWS CLI
           sudo apt-get install -y awscli
           
-          # Set environment variables
-          export AWS_REGION=${{ env.AWS_REGION }}
-          export ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
-          export ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY_NAME }}
-          export IMAGE_TAG=${{ github.sha }}
-          
           # Login to Amazon ECR
-          aws ecr get-login-password --region $AWS_REGION | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
           
           # Pull and run the Docker container
-          sudo docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          sudo docker run -d $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          sudo docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
+          sudo docker run -d ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
           
           echo "Docker container deployed successfully!"
