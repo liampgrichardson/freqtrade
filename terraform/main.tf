@@ -9,9 +9,9 @@ provider "aws" {
 # TF state bucket
 terraform {
   backend "s3" {
-    bucket = "my-tfstate-bucket-001" # Replace with your S3 bucket name
+    bucket = "my-tfstate-bucket-001"
     key    = "terraform-bot.tfstate"
-    region = "eu-west-1"             # Replace with your AWS region
+    region = "eu-west-1"
   }
 }
 
@@ -21,10 +21,10 @@ resource "aws_key_pair" "ec2_key" {
   public_key = var.ec2_ssh_public_key
 }
 
-# Find the latest Ubuntu AMI (for free-tier eligible t2.micro)
+# Find the latest Ubuntu AMI
 data "aws_ami" "ubuntu" {
   most_recent = true
-  owners      = ["099720109477"] # Canonical (Ubuntu) official owner ID
+  owners      = ["099720109477"]
 
   filter {
     name   = "name"
@@ -42,56 +42,46 @@ resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
 }
 
-# Create a private subnet
-resource "aws_subnet" "private_subnet" {
+# Create a Public Subnet
+resource "aws_subnet" "public_subnet" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = false
+  cidr_block              = "10.0.2.0/24"
+  map_public_ip_on_launch = true
 }
 
-# Create an Internet Gateway (for outbound traffic)
+# Create an Internet Gateway for public access
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.main.id
 }
 
-# Create a NAT Gateway (to allow outbound traffic while keeping EC2 private)
-resource "aws_eip" "nat" {
-  domain = "vpc"
-}
-
-resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.private_subnet.id
-}
-
-# Route table for private subnet (uses NAT for internet access)
-resource "aws_route_table" "private_rt" {
+# Route table for the public subnet
+resource "aws_route_table" "public_rt" {
   vpc_id = aws_vpc.main.id
 
   route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat.id
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.gw.id
   }
 }
 
-resource "aws_route_table_association" "private_assoc" {
-  subnet_id      = aws_subnet.private_subnet.id
-  route_table_id = aws_route_table.private_rt.id
+resource "aws_route_table_association" "public_assoc" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public_rt.id
 }
 
-# Security group for EC2 (SSH from GitHub Actions & allow outbound traffic)
+# Security group for EC2 (SSH only, no other inbound access)
 resource "aws_security_group" "ec2_sg" {
   vpc_id = aws_vpc.main.id
 
-  # Allow SSH from GitHub Actions (Dynamic IPs)
+  # Allow SSH from GitHub Actions (or specific IPs)
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Wide open, but can be locked down with GitHub OIDC later
+    cidr_blocks = ["0.0.0.0/0"] # TODO: Restrict to GitHub Actions IPs later
   }
 
-  # Allow all outbound traffic (for Docker containers)
+  # Allow all outbound traffic (needed for updates, package installs, etc.)
   egress {
     from_port   = 0
     to_port     = 0
@@ -100,7 +90,7 @@ resource "aws_security_group" "ec2_sg" {
   }
 }
 
-# IAM Role for EC2 instance (Allows access to AWS Timestream)
+# IAM Role for EC2 instance
 resource "aws_iam_role" "ec2_role" {
   name = "ec2-timestream-role"
 
@@ -142,14 +132,15 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   role = aws_iam_role.ec2_role.name
 }
 
-# Create EC2 instance (Free-tier t2.micro)
+# Create EC2 instance (Publicly accessible with only SSH allowed)
 resource "aws_instance" "my_ec2" {
-  ami                    = data.aws_ami.ubuntu.id  # Dynamically get latest Ubuntu AMI
+  ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t2.micro"
-  subnet_id              = aws_subnet.private_subnet.id
+  subnet_id              = aws_subnet.public_subnet.id  # Changed to public subnet
   key_name               = aws_key_pair.ec2_key.key_name
   security_groups        = [aws_security_group.ec2_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  associate_public_ip_address = true  # Ensures the instance gets a public IP
 
   tags = {
     Name = "DockerHost"
@@ -163,7 +154,7 @@ output "ec2_private_ip" {
   sensitive   = true
 }
 
-# Output the private IP of the EC2 instance
+# Output the public IP of the EC2 instance
 output "ec2_public_ip" {
   description = "The public IP address of the EC2 instance"
   value       = aws_instance.my_ec2.public_ip
