@@ -10,6 +10,7 @@ pd.set_option('display.max_columns', None)
 
 def main():
 
+    # TODO: update these names
     # initialize boto (aws) stuff
     database_name = "my-timestream-database"  # Replace with your Timestream database name
     table_name = "TestTable"  # Replace with your desired table name
