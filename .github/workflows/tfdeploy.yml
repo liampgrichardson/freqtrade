@@ -101,7 +101,7 @@ jobs:
         host: ${{ env.INSTANCE_PUBLIC_IP }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        debug: true  # Disable debug logging from appleboy
+        debug: false  # Disable debug logging from appleboy
         script: |
           # Update and install Docker
           sudo apt update -y
