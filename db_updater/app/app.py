@@ -1,3 +1,4 @@
+import logging
 from freqtrade_client import FtRestClient
 import boto3
 from botocore.exceptions import ClientError
@@ -5,11 +6,12 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import time
-pd.set_option('display.max_columns', None)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 def main():
-
     # TODO: update these names
     # initialize boto (aws) stuff
     database_name = "my-timestream-database"  # Replace with your Timestream database name
@@ -21,9 +23,7 @@ def main():
     timestream_write_client.update_table(
         DatabaseName=database_name,
         TableName=table_name,
-        MagneticStoreWriteProperties={
-            'EnableMagneticStoreWrites': True
-        }
+        MagneticStoreWriteProperties={'EnableMagneticStoreWrites': True}
     )
 
     # initialize freqtrade stuff
@@ -33,11 +33,11 @@ def main():
     pair = "BTC/USDT"
     exchange = "Binance"
 
-    # Get the status of the bot (should print "pong" if ok)
-    print(freqtrade_client.ping())
+    # Get the status of the bot (should log "pong" if ok)
+    logging.info(freqtrade_client.ping())
 
     while True:
-        print("starting loop")
+        logging.info("Starting loop")
 
         # get data from freqtrade
         candles = freqtrade_client.pair_candles(pair, strategy_timeframe, 10)
@@ -58,8 +58,8 @@ def main():
         )
 
         # Log timestamps
-        print(f"Last recorded timestamp in Timestream: {last_timestream_timestamp}")
-        print(f"Last recorded timestamp from Freqtrade: {last_freqtrade_timestamp}")
+        logging.info(f"Last recorded timestamp in Timestream: {last_timestream_timestamp}")
+        logging.info(f"Last recorded timestamp from Freqtrade: {last_freqtrade_timestamp}")
 
         # Wait for new data (not in timestream) to become available
         second_last_freqtrade_timestamp = df.index[-2]
@@ -71,7 +71,7 @@ def main():
         if last_timestream_timestamp:
             df = df[df.index > last_timestream_timestamp]
             if df.empty:
-                print("No new data to write. Waiting for next cycle...")
+                logging.info("No new data to write. Waiting for next cycle...")
                 continue  # Skip this iteration
 
         # Push latest Freqtrade data to Timestream
@@ -82,11 +82,9 @@ def main():
 
 def write_records_to_timestream(client, database_name, table_name, df, strategy_timeframe, pair, exchange):
     records = []
-
     # Determine column data types dynamically
     for timestamp, row in df.iterrows():
         measures = []
-
         for col_name, value in row.items():
             # Determine MeasureValueType
             if isinstance(value, (int, float)) and value and not np.isnan(value):
@@ -120,23 +118,21 @@ def write_records_to_timestream(client, database_name, table_name, df, strategy_
                 "TimeUnit": "MILLISECONDS"
             }
             records.append(record)
-
             # Write records in batches of 100
             if len(records) == 100:
                 try:
                     client.write_records(DatabaseName=database_name, TableName=table_name, Records=records)
-                    print("Batch of 100 records written successfully.")
+                    logging.info("Batch of 100 records written successfully.")
                 except ClientError as e:
-                    print(f"Error writing records: {e}")
+                    logging.error(f"Error writing records: {e}")
                 records = []  # Reset batch
-
     # Write any remaining records
     if records:
         try:
             client.write_records(DatabaseName=database_name, TableName=table_name, Records=records)
-            print("Final batch of records written successfully.")
+            logging.info("Final batch of records written successfully.")
         except ClientError as e:
-            print(f"Error writing final records: {e}")
+            logging.error(f"Error writing final records: {e}")
 
 
 def get_last_timestream_timestamp(timestream_query_client, database_name, table_name, pair, exchange, strategy_timeframe):
@@ -162,15 +158,13 @@ def get_last_timestream_timestamp(timestream_query_client, database_name, table_
                 if last_time:
                     return pd.to_datetime(last_time).tz_localize('UTC')
                 else:
-                    print("No 'ScalarValue' found in the response.")
+                    logging.warning("No 'ScalarValue' found in the response.")
             else:
-                print("No data in the first row of the response.")
+                logging.warning("No data in the first row of the response.")
         else:
-            print("No rows returned from the query.")
-
+            logging.warning("No rows returned from the query.")
     except ClientError as e:
-        print(f"Error querying Timestream: {e}")
-
+        logging.error(f"Error querying Timestream: {e}")
     return None  # Return None if no data found
 
 
@@ -178,22 +172,17 @@ def wait_for_safe_time(last_time, time_difference):
     """
     Pauses execution until the current time is at least 5 seconds past the next minute.
     """
-
     if last_time is None:
         return
-
     current_time = datetime.now().astimezone()  # Get the current time
-    print(f"Current time: {current_time.strftime('%H:%M:%S')}")
-
-    # Calculate the target time (doubled to accommodate for open/close time and
+    logging.info(f"Current time: {current_time.strftime('%H:%M:%S')}")
+    # Calculate the target time (doubled to accommodate for open vs close time and
     # extra 5 seconds for data to be surely available)
     time_delay = 2*time_difference
     target_time = last_time.replace(second=0, microsecond=0) + timedelta(seconds=time_delay) + timedelta(seconds=5)
-
     if target_time > current_time:
         waiting_time = (target_time - current_time).total_seconds()  # Convert timedelta to seconds
-        # Log
-        print(f"Waiting for {waiting_time} seconds until {target_time.strftime('%H:%M:%S')}.")
+        logging.info(f"Waiting for {waiting_time} seconds until {target_time.strftime('%H:%M:%S')}.")
         time.sleep(waiting_time)  # Sleep for the calculated time
 
 
