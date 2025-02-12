@@ -129,6 +129,6 @@ jobs:
           
           # Pull and run the db_updater image and container
           sudo docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
-          sudo docker run --network="host" ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
+          sudo docker run -d --network="host" ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
           
-          echo "Docker containers deployed successfully!"
+          echo "Docker containers deployed!"
