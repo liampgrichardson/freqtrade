@@ -184,6 +184,9 @@ def wait_for_safe_time(last_time, time_difference):
         waiting_time = (target_time - current_time).total_seconds()  # Convert timedelta to seconds
         logging.info(f"Waiting for {waiting_time} seconds until {target_time.strftime('%H:%M:%S')}.")
         time.sleep(waiting_time)  # Sleep for the calculated time
+    else:
+        logging.info(f"Detected target time before current time, waiting for 1 second,")
+        time.sleep(1)
 
 
 if __name__ == "__main__":
