@@ -109,28 +109,33 @@ resource "aws_iam_role" "ec2_role" {
   })
 }
 
-# Attach policy for AWS Timestream access
-resource "aws_iam_policy" "timestream_policy" {
-  name        = "TimestreamAccessPolicy"
-  description = "Allows EC2 instance to query AWS Timestream"
-
+# Attach policy for AWS dynamodb access
+resource "aws_iam_policy" "dynamodb_policy" {
+  name        = "ecsDynamoDBPolicy"
+  description = "Policy to allow ECS tasks to interact with DynamoDB"
   policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = [
-        "timestream:Select",
-        "timestream:DescribeEndpoints",
-        "timestream:UpdateTable",
-        "timestream:WriteRecords"
-      ]
-      Resource = "*"
-    }]
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:BatchGetItem",
+          "dynamodb:BatchWriteItem",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:UpdateItem",
+          "dynamodb:DescribeTable"
+        ],
+        Resource = "*" # Ideally scope to the specific table ARN
+      }
+    ]
   })
 }
 
 resource "aws_iam_role_policy_attachment" "timestream_attach" {
-  policy_arn = aws_iam_policy.timestream_policy.arn
+  policy_arn = aws_iam_policy.dynamodb_policy.arn
   role       = aws_iam_role.ec2_role.name
 }
 
