@@ -110,8 +110,8 @@ resource "aws_iam_role" "ec2_role" {
 }
 
 # Attach policy for AWS dynamodb access
-resource "aws_iam_policy" "dynamodb_policy" {
-  name        = "ecsDynamoDBPolicy"
+resource "aws_iam_policy" "ec2_dynamodb_policy" {
+  name        = "FreqtradeEC2DynamoDBPolicy"
   description = "Policy to allow ECS tasks to interact with DynamoDB"
   policy = jsonencode({
     Version = "2012-10-17",
@@ -135,7 +135,7 @@ resource "aws_iam_policy" "dynamodb_policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "timestream_attach" {
-  policy_arn = aws_iam_policy.dynamodb_policy.arn
+  policy_arn = aws_iam_policy.ec2_dynamodb_policy.arn
   role       = aws_iam_role.ec2_role.name
 }
 
