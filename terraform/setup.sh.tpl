@@ -32,6 +32,9 @@ cd ft_userdata/
 sudo docker-compose pull
 sudo docker-compose up -d
 
+# Install AWS CLI
+sudo apt-get install -y awscli
+
 # === ECR Login and container run ===
 aws ecr get-login-password --region "$AWS_REGION" | sudo docker login --username AWS --password-stdin "$ECR_REGISTRY"
 sudo docker pull "$ECR_REPOSITORY:$IMAGE_TAG"
