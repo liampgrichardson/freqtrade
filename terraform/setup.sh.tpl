@@ -30,7 +30,7 @@ sudo docker-compose up -d
 
 # === ECR Login and container run ===
 aws ecr get-login-password --region "$AWS_REGION" | sudo docker login --username AWS --password-stdin "$ECR_REPOSITORY"
-sudo docker pull "${ECR_REPOSITORY}:${IMAGE_TAG}"
-sudo docker run -d --memory=256m --network="host" "${ECR_REPOSITORY}:${IMAGE_TAG}"
+sudo docker pull "$ECR_REPOSITORY:$IMAGE_TAG"
+sudo docker run -d --memory=256m --network="host" "$ECR_REPOSITORY:$IMAGE_TAG"
 
 echo "✅ Docker containers deployed!"
