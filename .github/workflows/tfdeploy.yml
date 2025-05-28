@@ -1,14 +1,13 @@
 name: Terraform Deploy
 
 on:
-  workflow_dispatch: # Allows you to manually trigger the workflow
+  workflow_dispatch: # Allows to manually trigger the workflow
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
     environment: aws
 
-    # Define environment variables at the job level
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -30,18 +29,15 @@ jobs:
         ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
         IMAGE_TAG: ${{ github.sha }}  # Use the commit SHA for unique tagging
       run: |
-        cd db_updater
-        cd app
+        cd db_updater/app
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-    # Step: Set up Terraform
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v2
       with:
         terraform_version: 1.3.0
 
-    # Step: Terraform Init and Apply (Provisions EC2)
     - name: Initialize Terraform
       run: |
         cd terraform
@@ -50,13 +46,22 @@ jobs:
     - name: Plan Terraform changes
       env:
         TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
-        TF_VAR_ec2_ssh_public_key: ${{ secrets.EC2_SSH_PUBLIC_KEY }}
+        TF_VAR_ecr_repo_url: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}
+        TF_VAR_image_tag: ${{ github.sha }}
+        TF_VAR_github_repo: ${{ github.repository }}
+        TF_VAR_github_ref: ${{ github.ref_name }}
       run: |
         cd terraform
         terraform plan -out=tfplan
 
     - name: Apply Terraform changes
       id: tf-apply
+      env:
+        TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
+        TF_VAR_github_repo: ${{ github.repository }}
+        TF_VAR_github_ref: ${{ github.ref_name }}
+        TF_VAR_ecr_repo_url: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}
+        TF_VAR_image_tag: ${{ github.sha }}
       run: |
         cd terraform
         terraform apply tfplan
@@ -64,11 +69,10 @@ jobs:
         echo "INSTANCE_PUBLIC_IP=$(terraform-bin output -raw ec2_public_ip)" >> $GITHUB_ENV
         echo "INSTANCE_ID=$(terraform-bin output -raw ec2_instance_id)" >> $GITHUB_ENV
 
-    # Step: Wait for the EC2 instance to be in the "running" state
     - name: Wait for EC2 instance to be ready
       run: |
         echo "Waiting for the EC2 instance to pass status checks..."
-        INSTANCE_ID=${{env.INSTANCE_ID}}
+        INSTANCE_ID=${{ env.INSTANCE_ID }}
         MAX_RETRIES=30
         RETRY_COUNT=0
         
@@ -77,63 +81,15 @@ jobs:
           INSTANCE_STATUS=$(aws ec2 describe-instance-status --instance-ids $INSTANCE_ID --query "InstanceStatuses[0].InstanceStatus.Status" --output text)
           SYSTEM_STATUS=$(aws ec2 describe-instance-status --instance-ids $INSTANCE_ID --query "InstanceStatuses[0].SystemStatus.Status" --output text)
 
-          echo "Current instance state: $INSTANCE_STATE"
-          echo "Instance status: $INSTANCE_STATUS"
-          echo "System status: $SYSTEM_STATUS"
-
           if [ "$INSTANCE_STATE" == "running" ] && [ "$INSTANCE_STATUS" == "ok" ] && [ "$SYSTEM_STATUS" == "ok" ]; then
             echo "EC2 instance is fully ready!"
             exit 0
           fi
 
-          echo "Instance is not ready yet. Retrying in 5 seconds... ($((RETRY_COUNT+1))/$MAX_RETRIES)"
+          echo "Instance not ready. Retrying in 5 seconds... ($((RETRY_COUNT+1))/$MAX_RETRIES)"
           sleep 5
           RETRY_COUNT=$((RETRY_COUNT+1))
         done
 
-        echo "ERROR: EC2 instance did not become fully ready within the expected time."
-        exit 1  # Fail the workflow if the instance is not fully ready
-
-    # Step: Deploy Docker on EC2
-    - name: Deploy Docker on EC2
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ env.INSTANCE_PUBLIC_IP }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        debug: True  # Disable debug logging from appleboy
-        script: |
-          # Update and install Docker
-          sudo apt update -y
-          sudo apt install -y docker.io docker-compose
-          sudo systemctl start docker
-          
-          # Verify Docker installation
-          sudo docker --version
-          # Verify Docker Compose installation
-          sudo docker-compose --version
-          
-          # Get freqtrade
-          git clone "https://github.com/${{ github.repository }}.git"
-          echo "Contents of directory:"
-          ls -l
-          cd freqtrade
-          git checkout "${{ github.ref_name }}"
-          echo "Contents of directory:"
-          ls -l
-          cd ..
-          cd freqtrade/ft_userdata/
-          sudo docker-compose pull
-          sudo docker-compose up -d
-          
-          # Install AWS CLI
-          sudo apt-get install -y awscli
-          
-          # Login to Amazon ECR
-          aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
-          
-          # Pull and run the db_updater image and container
-          sudo docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
-          sudo docker run -d --memory=256m --network="host" ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
-          
-          echo "Docker containers deployed!"
+        echo "ERROR: EC2 instance did not become ready in time."
+        exit 1

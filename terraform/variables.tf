@@ -10,7 +10,18 @@ variable "global_tags" {
   type        = map(string)
 }
 
-variable "ec2_ssh_public_key" {
-  description = "Public SSH key for EC2 access"
-  type        = string
+variable "github_repo" {
+  type = string
+}
+
+variable "github_ref" {
+  type = string
+}
+
+variable "ecr_repo_url" {
+  type = string
+}
+
+variable "image_tag" {
+  type = string
 }

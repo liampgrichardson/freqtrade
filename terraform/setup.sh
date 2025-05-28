@@ -1,0 +1,36 @@
+#!/bin/bash
+set -e
+
+# === CONFIG VALUES (passed from Terraform) ===
+REPO_URL="https://github.com/${github_repo}.git"
+REPO_BRANCH="${github_ref}"
+ECR_REPOSITORY="${ecr_repo_url}"
+IMAGE_TAG="${image_tag}"
+AWS_REGION="${aws_region}"
+
+# === Install Docker & Tools ===
+sudo apt update -y
+sudo apt install -y docker.io docker-compose awscli git
+
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# === Check installations ===
+sudo docker --version
+sudo docker-compose --version
+
+# === Clone and setup freqtrade ===
+git clone "$REPO_URL"
+cd "freqtrade"
+git checkout "$REPO_BRANCH"
+
+cd ft_userdata/
+sudo docker-compose pull
+sudo docker-compose up -d
+
+# === ECR Login and container run ===
+aws ecr get-login-password --region "$AWS_REGION" | sudo docker login --username AWS --password-stdin "$ECR_REPOSITORY"
+sudo docker pull "${ECR_REPOSITORY}:${IMAGE_TAG}"
+sudo docker run -d --memory=256m --network="host" "${ECR_REPOSITORY}:${IMAGE_TAG}"
+
+echo "✅ Docker containers deployed!"

@@ -23,12 +23,6 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true   # Allows public DNS names for public instances
 }
 
-# Store the SSH Key Pair in AWS
-resource "aws_key_pair" "ec2_key" {
-  key_name   = "github-actions-key"
-  public_key = var.ec2_ssh_public_key
-}
-
 # Find the latest Ubuntu AMI
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -75,14 +69,6 @@ resource "aws_route_table_association" "public_assoc" {
 # Security group for EC2 (SSH only, no other inbound access)
 resource "aws_security_group" "ec2_sg" {
   vpc_id = aws_vpc.main.id
-
-  # Allow SSH from GitHub Actions (or specific IPs)
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # TODO: Restrict to GitHub Actions IPs later
-  }
 
   # Allow all outbound traffic (needed for updates, package installs, etc.)
   egress {
@@ -174,10 +160,17 @@ resource "aws_instance" "my_ec2" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t2.micro"
   subnet_id              = aws_subnet.public_subnet.id  # Public subnet
-  key_name               = aws_key_pair.ec2_key.key_name
   security_groups        = [aws_security_group.ec2_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
   associate_public_ip_address = true  # Ensures the instance gets a public IP
+
+  user_data = templatefile("${path.module}/setup.sh.tpl", {
+  github_repo   = var.github_repo,      # e.g., "myuser/freqtrade"
+  github_ref    = var.github_ref,       # e.g., "main"
+  ecr_repo_url  = var.ecr_repo_url,
+  image_tag     = var.image_tag,
+  aws_region    = var.aws_region
+  })
 
   tags = {
     Name = "DockerHost"
