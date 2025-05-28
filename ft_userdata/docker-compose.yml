@@ -19,6 +19,7 @@ services:
     #   context: .
     #   dockerfile: "./docker/Dockerfile.custom"
     restart: unless-stopped
+    mem_limit: 512m
     container_name: freqtrade
     volumes:
       - "./user_data:/freqtrade/user_data"

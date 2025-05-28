@@ -117,6 +117,11 @@ jobs:
           git clone "https://github.com/${{ github.repository }}.git"
           echo "Contents of directory:"
           ls -l
+          cd freqtrade
+          git checkout "${{ github.ref_name }}"
+          echo "Contents of directory:"
+          ls -l
+          cd ..
           cd freqtrade/ft_userdata/
           sudo docker-compose pull
           sudo docker-compose up -d
@@ -129,6 +134,6 @@ jobs:
           
           # Pull and run the db_updater image and container
           sudo docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
-          sudo docker run -d --network="host" ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
+          sudo docker run -d --memory=256m --network="host" ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:${{ github.sha }}
           
           echo "Docker containers deployed!"
