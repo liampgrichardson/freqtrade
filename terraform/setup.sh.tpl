@@ -10,10 +10,13 @@ AWS_REGION="${aws_region}"
 
 # === Install Docker & Tools ===
 sudo apt update -y
-sudo apt install -y docker.io docker-compose awscli git
-
+sudo apt install -y docker.io docker-compose
 sudo systemctl start docker
-sudo systemctl enable docker
+
+# Verify Docker installation
+sudo docker --version
+# Verify Docker Compose installation
+sudo docker-compose --version
 
 # === Check installations ===
 sudo docker --version
