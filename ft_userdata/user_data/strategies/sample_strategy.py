@@ -278,6 +278,12 @@ class SampleStrategy(IStrategy):
         # dataframe['sma5'] = ta.SMA(dataframe, timeperiod=5)
         dataframe['sma10'] = ta.SMA(dataframe, timeperiod=10)
         dataframe['Close Prediction (1h)'] = ta.SMA(dataframe, timeperiod=10)
+        col = 'length of dataframe'
+        # Ensure the column exists; if not, create it with default values (e.g., None or 0)
+        if col not in dataframe.columns:
+            dataframe[col] = 0  # or use 0, np.nan, etc.
+        # Set the last value in the column
+        dataframe.at[dataframe.index[-1], col] = len(dataframe)
         # dataframe['sma21'] = ta.SMA(dataframe, timeperiod=21)
         # dataframe['sma50'] = ta.SMA(dataframe, timeperiod=50)
         # dataframe['sma100'] = ta.SMA(dataframe, timeperiod=100)
