@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from decimal import Decimal
 from tqdm import tqdm
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # Define your load_df function
@@ -11,7 +11,9 @@ def load_df():
     np.random.seed(42)  # Ensures reproducibility
     # date_range = pd.date_range(start="2024-01-01", periods=(1 * 10080), freq="T")  # 1 weeks of minute data
     # Get the current UTC time in ISO format
-    now_utc = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
+    now_utc = datetime.now(timezone.utc)  # .strftime('%Y-%m-%d %H:%M')
+    # Round down to the nearest minute by removing seconds and microseconds
+    now_utc = now_utc.replace(second=0, microsecond=0)
     date_range = pd.date_range(end=now_utc, periods=(1 * 10080), freq="T")
 
     # Generate random close prices between 50000 and 100000

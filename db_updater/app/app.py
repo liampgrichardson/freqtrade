@@ -104,15 +104,6 @@ def main():
     last_freqtrade_timestamp = df.index[-1]  # Last index
     scd_last_freqtrade_timestamp = df.index[-2]  # Second last index
 
-    # Get the current UTC time in ISO format
-    now_utc = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-
-    # Log timestamps
-    logging.info(f"Length of Freqtrade dataframe               : {len(df)}")
-    logging.info(f"Second ast recorded timestamp from Freqtrade: {scd_last_freqtrade_timestamp}")
-    logging.info(f"Last recorded timestamp from Freqtrade      : {last_freqtrade_timestamp}")
-    logging.info(f"UTC timestamp                               : {now_utc}")
-
     # push to dynamodb
     push_to_dynamodb(df)
 
@@ -136,12 +127,6 @@ def main():
         # Get last datetime from freqtrade
         last_freqtrade_timestamp = df.index[-1]  # Last index
         scd_last_freqtrade_timestamp = df.index[-2]  # Second last index
-
-        # Log timestamps
-        logging.info(f"Length of Freqtrade dataframe               : {len(df)}")
-        logging.info(f"Second ast recorded timestamp from Freqtrade: {scd_last_freqtrade_timestamp}")
-        logging.info(f"Last recorded timestamp from Freqtrade      : {last_freqtrade_timestamp}")
-        logging.info(f"UTC timestamp                               : {now_utc}")
 
         # push to dynamodb
         push_to_dynamodb(df.iloc[[-1]])
