@@ -24,10 +24,10 @@ sudo docker --version
 sudo docker-compose --version
 
 # === Clone and setup freqtrade ===
+cd /home/ubuntu
 git clone "$REPO_URL"
 cd freqtrade/
 git checkout "$REPO_BRANCH"
-
 cd ft_userdata/
 sudo docker-compose pull
 sudo docker-compose up -d
