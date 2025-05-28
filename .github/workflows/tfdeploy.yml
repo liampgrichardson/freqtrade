@@ -46,10 +46,11 @@ jobs:
     - name: Plan Terraform changes
       env:
         TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
-        TF_VAR_ecr_repo_url: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}
-        TF_VAR_image_tag: ${{ github.sha }}
         TF_VAR_github_repo: ${{ github.repository }}
         TF_VAR_github_ref: ${{ github.ref_name }}
+        TF_VAR_ecr_repo: ${{ secrets.ECR_REPOSITORY_NAME }}
+        TF_VAR_ecr_reg: ${{ steps.login-ecr.outputs.registry }}
+        TF_VAR_image_tag: ${{ github.sha }}
       run: |
         cd terraform
         terraform plan -out=tfplan
@@ -60,7 +61,8 @@ jobs:
         TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
         TF_VAR_github_repo: ${{ github.repository }}
         TF_VAR_github_ref: ${{ github.ref_name }}
-        TF_VAR_ecr_repo_url: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}
+        TF_VAR_ecr_repo: ${{ secrets.ECR_REPOSITORY_NAME }}
+        TF_VAR_ecr_reg: ${{ steps.login-ecr.outputs.registry }}
         TF_VAR_image_tag: ${{ github.sha }}
       run: |
         cd terraform

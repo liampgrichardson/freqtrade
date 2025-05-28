@@ -4,7 +4,8 @@ set -e
 # === CONFIG VALUES (passed from Terraform) ===
 REPO_URL="https://github.com/${github_repo}.git"
 REPO_BRANCH="${github_ref}"
-ECR_REPOSITORY="${ecr_repo_url}"
+ECR_REGISTRY="${ecr_reg}"
+ECR_REPOSITORY="${ecr_repo}"
 IMAGE_TAG="${image_tag}"
 AWS_REGION="${aws_region}"
 
@@ -32,7 +33,7 @@ sudo docker-compose pull
 sudo docker-compose up -d
 
 # === ECR Login and container run ===
-aws ecr get-login-password --region "$AWS_REGION" | sudo docker login --username AWS --password-stdin "$ECR_REPOSITORY"
+aws ecr get-login-password --region "$AWS_REGION" | sudo docker login --username AWS --password-stdin "$ECR_REGISTRY"
 sudo docker pull "$ECR_REPOSITORY:$IMAGE_TAG"
 sudo docker run -d --memory=256m --network="host" "$ECR_REPOSITORY:$IMAGE_TAG"
 

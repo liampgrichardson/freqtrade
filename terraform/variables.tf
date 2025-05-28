@@ -18,7 +18,11 @@ variable "github_ref" {
   type = string
 }
 
-variable "ecr_repo_url" {
+variable "ecr_repo" {
+  type = string
+}
+
+variable "ecr_reg" {
   type = string
 }
 

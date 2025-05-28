@@ -175,7 +175,8 @@ resource "aws_instance" "my_ec2" {
   user_data = templatefile("${path.module}/setup.sh.tpl", {
   github_repo   = var.github_repo,      # e.g., "myuser/freqtrade"
   github_ref    = var.github_ref,       # e.g., "main"
-  ecr_repo_url  = var.ecr_repo_url,
+  ecr_repo      = var.ecr_repo,
+  ecr_reg       = var.ecr_reg,
   image_tag     = var.image_tag,
   aws_region    = var.aws_region
   })
