@@ -38,7 +38,7 @@ sudo apt-get install -y awscli
 
 # === ECR Login and container run ===
 aws ecr get-login-password --region "$AWS_REGION" | sudo docker login --username AWS --password-stdin "$ECR_REGISTRY"
-sudo docker pull "$ECR_REPOSITORY:$IMAGE_TAG"
-sudo docker run -d --memory=256m --network="host" "$ECR_REPOSITORY:$IMAGE_TAG"
+sudo docker pull "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+sudo docker run -d --memory=256m --network="host" "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
 echo "✅ Docker containers deployed!"
