@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import time
 from decimal import Decimal
 from tqdm import tqdm
+import requests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -85,13 +86,17 @@ def main():
     strategy = "SampleStrategy"
     strategy_timeframe = freqtrade_client.strategy(strategy)["timeframe"]
     pair = "BTC/USDT"
-    exchange = "Binance"
 
     # Get the status of the bot (should log "pong" if ok)
     logging.info(freqtrade_client.ping())
 
     # get data from freqtrade
-    candles = freqtrade_client.pair_candles(pair, strategy_timeframe, 10)
+    try:
+        candles = freqtrade_client.pair_candles(pair, strategy_timeframe, 10)
+    except Exception as e:
+        logging.error(f"Failed to fetch candles: \n{e}", exc_info=True)
+        time.sleep(5)  # Optional: wait a bit before retrying or exiting
+        return  # Or continue / break / pass depending on where you are
 
     # Convert the response to a DataFrame
     columns = candles['columns']
@@ -115,7 +120,12 @@ def main():
         sleep_until_target_time(scd_last_freqtrade_timestamp, last_freqtrade_timestamp)
 
         # get data from freqtrade
-        candles = freqtrade_client.pair_candles(pair, strategy_timeframe, 10)
+        try:
+            candles = freqtrade_client.pair_candles(pair, strategy_timeframe, 10)
+        except Exception as e:
+            logging.error(f"Failed to fetch candles: \n{e}", exc_info=True)
+            time.sleep(5)  # Optional: wait a bit before retrying or exiting
+            return  # Or continue / break / pass depending on where you are
 
         # Convert the response to a DataFrame
         columns = candles['columns']
