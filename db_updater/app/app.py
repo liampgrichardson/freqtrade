@@ -91,12 +91,13 @@ def main():
     logging.info(freqtrade_client.ping())
 
     # get data from freqtrade
-    try:
-        candles = freqtrade_client.pair_candles(pair, strategy_timeframe, 10)
-    except Exception as e:
-        logging.error(f"Failed to fetch candles: \n{e}", exc_info=True)
-        time.sleep(5)  # Optional: wait a bit before retrying or exiting
-        return  # Or continue / break / pass depending on where you are
+    candles = None
+    while candles is None:
+        try:
+            candles = freqtrade_client.pair_candles(pair, strategy_timeframe, 10)
+        except Exception as e:
+            logging.error(f"Failed to fetch candles: \n{e}", exc_info=True)
+            time.sleep(5)  # wait a bit before retrying
 
     # Convert the response to a DataFrame
     columns = candles['columns']
@@ -125,7 +126,6 @@ def main():
         except Exception as e:
             logging.error(f"Failed to fetch candles: \n{e}", exc_info=True)
             time.sleep(5)  # Optional: wait a bit before retrying or exiting
-            return  # Or continue / break / pass depending on where you are
 
         # Convert the response to a DataFrame
         columns = candles['columns']
