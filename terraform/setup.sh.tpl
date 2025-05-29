@@ -28,8 +28,8 @@ cd /home/ubuntu
 git clone "$REPO_URL"
 cd freqtrade/
 git checkout "$REPO_BRANCH"
-chown -R 1000:1000 user_data  # for permissions
 cd ft_userdata/
+chown -R 1000:1000 user_data  # for permissions
 sudo docker-compose pull
 sudo docker-compose up -d
 
