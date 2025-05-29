@@ -70,14 +70,6 @@ resource "aws_route_table_association" "public_assoc" {
 resource "aws_security_group" "ec2_sg" {
   vpc_id = aws_vpc.main.id
 
-  # Allow SSH for debugging purposes
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   # Allow all outbound traffic (needed for updates, package installs, etc.)
   egress {
     from_port   = 0
