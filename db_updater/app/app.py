@@ -87,7 +87,7 @@ def main():
     strategy_timeframe = freqtrade_client.strategy(strategy)["timeframe"]
     pair = "BTC/USDT"
 
-    # Get the status of the bot (should log "pong" if ok)
+    # get the status of the bot (should log "pong" if ok)
     logging.info(freqtrade_client.ping())
 
     # get data from freqtrade
@@ -99,25 +99,28 @@ def main():
             logging.error(f"Failed to fetch candles: \n{e}", exc_info=True)
             time.sleep(5)  # wait a bit before retrying
 
-    # Convert the response to a DataFrame
+    # convert the response to a DataFrame
     columns = candles['columns']
     data = candles['data']
     df = pd.DataFrame(data, columns=columns)
     df['date'] = pd.to_datetime(df['date'])
     df.set_index('date', inplace=True)
 
-    # Get last datetime from freqtrade
+    # get last datetime from freqtrade df
     last_freqtrade_timestamp = df.index[-1]  # Last index
     scd_last_freqtrade_timestamp = df.index[-2]  # Second last index
 
     # push to dynamodb
-    push_to_dynamodb(df)
-
-    # last pushed timestamp
-    logging.info(f"Timestamp of last pushed to dynamoDB         : {df.index[-1]}")
+    try:
+        push_to_dynamodb(df)
+        logging.info(f"Timestamp of last pushed to dynamoDB         : {df.index[-1]}")
+    except Exception as e:
+        logging.error(f"Failed to push data to DynamoDB: {e}", exc_info=True)
 
     while True:
         logging.info("Starting loop")
+
+        # wait for correct time to proceed in loop
         sleep_until_target_time(scd_last_freqtrade_timestamp, last_freqtrade_timestamp)
 
         # get data from freqtrade
@@ -125,24 +128,26 @@ def main():
             candles = freqtrade_client.pair_candles(pair, strategy_timeframe, 10)
         except Exception as e:
             logging.error(f"Failed to fetch candles: \n{e}", exc_info=True)
-            time.sleep(5)  # Optional: wait a bit before retrying or exiting
+            time.sleep(5)  # wait a bit before continuing
+            continue
 
-        # Convert the response to a DataFrame
+        # convert the response to a DataFrame
         columns = candles['columns']
         data = candles['data']
         df = pd.DataFrame(data, columns=columns)
         df['date'] = pd.to_datetime(df['date'])
         df.set_index('date', inplace=True)
 
-        # Get last datetime from freqtrade
+        # Get last datetime from freqtrade df
         last_freqtrade_timestamp = df.index[-1]  # Last index
         scd_last_freqtrade_timestamp = df.index[-2]  # Second last index
 
         # push to dynamodb
-        push_to_dynamodb(df.iloc[[-1]])
-
-        # last pushed timestamp
-        logging.info(f"Timestamp of last pushed to dynamoDB         : {df.index[-1]}")
+        try:
+            push_to_dynamodb(df.iloc[[-1]])
+            logging.info(f"Timestamp of last pushed to dynamoDB         : {df.index[-1]}")
+        except Exception as e:
+            logging.error(f"Failed to push data to DynamoDB: {e}", exc_info=True)
 
 
 if __name__ == "__main__":
