@@ -42,3 +42,4 @@ sudo docker pull "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 sudo docker run -d --memory=256m --network="host" "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
 echo "✅ Docker containers deployed!"
+sudo docker stats
