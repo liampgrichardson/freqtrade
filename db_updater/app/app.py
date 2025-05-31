@@ -126,21 +126,22 @@ def main():
         # get data from freqtrade
         try:
             candles = freqtrade_client.pair_candles(pair, strategy_timeframe, 10)
+
+            # convert the response to a DataFrame
+            columns = candles['columns']
+            data = candles['data']
+            df = pd.DataFrame(data, columns=columns)
+            df['date'] = pd.to_datetime(df['date'])
+            df.set_index('date', inplace=True)
+
+            # Get last datetime from freqtrade df
+            last_freqtrade_timestamp = df.index[-1]  # Last index
+            scd_last_freqtrade_timestamp = df.index[-2]  # Second last index
+
         except Exception as e:
-            logging.error(f"Failed to fetch candles: \n{e}", exc_info=True)
+            logging.error(f"Failed to fetch or format candles: \n{e}", exc_info=True)
             time.sleep(5)  # wait a bit before continuing
             continue
-
-        # convert the response to a DataFrame
-        columns = candles['columns']
-        data = candles['data']
-        df = pd.DataFrame(data, columns=columns)
-        df['date'] = pd.to_datetime(df['date'])
-        df.set_index('date', inplace=True)
-
-        # Get last datetime from freqtrade df
-        last_freqtrade_timestamp = df.index[-1]  # Last index
-        scd_last_freqtrade_timestamp = df.index[-2]  # Second last index
 
         # push to dynamodb
         try:
