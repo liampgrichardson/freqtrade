@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 import time
 from decimal import Decimal
 from tqdm import tqdm
-import requests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
