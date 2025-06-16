@@ -173,17 +173,41 @@ resource "aws_instance" "my_ec2" {
   associate_public_ip_address = true  # Ensures the instance gets a public IP
 
   user_data = templatefile("${path.module}/setup.sh.tpl", {
-  github_repo   = var.github_repo,      # e.g., "myuser/freqtrade"
-  github_ref    = var.github_ref,       # e.g., "main"
-  ecr_repo      = var.ecr_repo,
-  ecr_reg       = var.ecr_reg,
-  image_tag     = var.image_tag,
-  aws_region    = var.aws_region
+    github_repo   = var.github_repo,      # e.g., "myuser/freqtrade"
+    github_ref    = var.github_ref,       # e.g., "main"
+    ecr_repo      = var.ecr_repo,
+    ecr_reg       = var.ecr_reg,
+    image_tag     = var.image_tag,
+    aws_region    = var.aws_region
   })
 
   tags = {
     Name = "DockerHost"
   }
+}
+
+# CloudWatch alarm to auto-recover EC2 instance on system status check failure
+resource "aws_cloudwatch_metric_alarm" "ec2_status_check_failed" {
+  alarm_name          = "ec2-${aws_instance.my_ec2.id}-status-check-failed"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "StatusCheckFailed_System"
+  namespace           = "AWS/EC2"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 0
+  alarm_description   = "EC2 instance system check failed - triggering recovery"
+
+  dimensions = {
+    InstanceId = aws_instance.my_ec2.id
+  }
+
+  treat_missing_data = "missing"
+  actions_enabled    = true
+
+  alarm_actions = [
+    "arn:aws:automate:${var.aws_region}:ec2:recover"
+  ]
 }
 
 # Output the private IP of the EC2 instance
