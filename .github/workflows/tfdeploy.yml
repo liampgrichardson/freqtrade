@@ -30,8 +30,10 @@ jobs:
         IMAGE_TAG: ${{ github.sha }}  # Use the commit SHA for unique tagging
       run: |
         cd db_updater/app
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker buildx create --use
+        docker buildx build --platform linux/arm64 \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+          --push .
 
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v2
