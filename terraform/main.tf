@@ -166,7 +166,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 # Create EC2 instance (Publicly accessible with only SSH allowed)
 resource "aws_instance" "my_ec2" {
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t3.micro"
+  instance_type          = "t4g.small"
   subnet_id              = aws_subnet.public_subnet.id  # Public subnet
   security_groups        = [aws_security_group.ec2_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name

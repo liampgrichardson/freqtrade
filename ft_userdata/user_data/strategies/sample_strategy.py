@@ -238,16 +238,16 @@ class SampleStrategy(IStrategy):
         # ------------------------------------
 
         # Bollinger Bands
-        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
-        dataframe["bb_lowerband"] = bollinger["lower"]
-        dataframe["bb_middleband"] = bollinger["mid"]
-        dataframe["bb_upperband"] = bollinger["upper"]
-        dataframe["bb_percent"] = (dataframe["close"] - dataframe["bb_lowerband"]) / (
-            dataframe["bb_upperband"] - dataframe["bb_lowerband"]
-        )
-        dataframe["bb_width"] = (dataframe["bb_upperband"] - dataframe["bb_lowerband"]) / dataframe[
-            "bb_middleband"
-        ]
+        # bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
+        # dataframe["bb_lowerband"] = bollinger["lower"]
+        # dataframe["bb_middleband"] = bollinger["mid"]
+        # dataframe["bb_upperband"] = bollinger["upper"]
+        # dataframe["bb_percent"] = (dataframe["close"] - dataframe["bb_lowerband"]) / (
+        #     dataframe["bb_upperband"] - dataframe["bb_lowerband"]
+        # )
+        # dataframe["bb_width"] = (dataframe["bb_upperband"] - dataframe["bb_lowerband"]) / dataframe[
+        #     "bb_middleband"
+        # ]
 
         # Bollinger Bands - Weighted (EMA based instead of SMA)
         # weighted_bollinger = qtpylib.weighted_bollinger_bands(
@@ -277,13 +277,15 @@ class SampleStrategy(IStrategy):
         # dataframe['sma3'] = ta.SMA(dataframe, timeperiod=3)
         # dataframe['sma5'] = ta.SMA(dataframe, timeperiod=5)
         dataframe['sma10'] = ta.SMA(dataframe, timeperiod=10)
-        dataframe['Close Prediction (1h)'] = ta.SMA(dataframe, timeperiod=10)
+        # dataframe['Close Prediction (1h)'] = ta.SMA(dataframe, timeperiod=10)
+
         col = 'length of dataframe'
         # Ensure the column exists; if not, create it with default values (e.g., None or 0)
         if col not in dataframe.columns:
             dataframe[col] = 0  # or use 0, np.nan, etc.
         # Set the last value in the column
         dataframe.at[dataframe.index[-1], col] = len(dataframe)
+
         # dataframe['sma21'] = ta.SMA(dataframe, timeperiod=21)
         # dataframe['sma50'] = ta.SMA(dataframe, timeperiod=50)
         # dataframe['sma100'] = ta.SMA(dataframe, timeperiod=100)
@@ -297,9 +299,9 @@ class SampleStrategy(IStrategy):
         # Cycle Indicator
         # ------------------------------------
         # Hilbert Transform Indicator - SineWave
-        hilbert = ta.HT_SINE(dataframe)
-        dataframe["htsine"] = hilbert["sine"]
-        dataframe["htleadsine"] = hilbert["leadsine"]
+        # hilbert = ta.HT_SINE(dataframe)
+        # dataframe["htsine"] = hilbert["sine"]
+        # dataframe["htleadsine"] = hilbert["leadsine"]
 
         # Pattern Recognition - Bullish candlestick patterns
         # ------------------------------------
