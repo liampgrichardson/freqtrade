@@ -14,10 +14,19 @@ sudo apt update -y
 sudo apt install -y docker.io docker-compose
 sudo systemctl start docker
 
-# Verify Docker installation
-sudo docker --version
-# Verify Docker Compose installation
-sudo docker-compose --version
+# Enable swap if not present
+if ! swapon --show | grep -q '/swapfile'; then
+  echo "Creating swapfile..."
+  sudo fallocate -l 3G /swapfile
+  sudo chmod 600 /swapfile
+  sudo mkswap /swapfile
+  sudo swapon /swapfile
+
+  # Make swap persistent
+  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+else
+  echo "Swapfile already exists."
+fi
 
 # === Check installations ===
 sudo docker --version
