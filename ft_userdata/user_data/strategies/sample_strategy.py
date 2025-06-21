@@ -238,16 +238,16 @@ class SampleStrategy(IStrategy):
         # ------------------------------------
 
         # Bollinger Bands
-        # bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
-        # dataframe["bb_lowerband"] = bollinger["lower"]
-        # dataframe["bb_middleband"] = bollinger["mid"]
-        # dataframe["bb_upperband"] = bollinger["upper"]
-        # dataframe["bb_percent"] = (dataframe["close"] - dataframe["bb_lowerband"]) / (
-        #     dataframe["bb_upperband"] - dataframe["bb_lowerband"]
-        # )
-        # dataframe["bb_width"] = (dataframe["bb_upperband"] - dataframe["bb_lowerband"]) / dataframe[
-        #     "bb_middleband"
-        # ]
+        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
+        dataframe["bb_lowerband"] = bollinger["lower"]
+        dataframe["bb_middleband"] = bollinger["mid"]
+        dataframe["bb_upperband"] = bollinger["upper"]
+        dataframe["bb_percent"] = (dataframe["close"] - dataframe["bb_lowerband"]) / (
+            dataframe["bb_upperband"] - dataframe["bb_lowerband"]
+        )
+        dataframe["bb_width"] = (dataframe["bb_upperband"] - dataframe["bb_lowerband"]) / dataframe[
+            "bb_middleband"
+        ]
 
         # Bollinger Bands - Weighted (EMA based instead of SMA)
         # weighted_bollinger = qtpylib.weighted_bollinger_bands(
