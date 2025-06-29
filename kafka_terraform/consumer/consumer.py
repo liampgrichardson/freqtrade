@@ -1,5 +1,13 @@
+import logging
 from kafka import KafkaConsumer
 from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 BS = [
     "b-2.freqtrademskcluster.mw89jl.c2.kafka.eu-west-1.amazonaws.com:9098",
@@ -9,9 +17,9 @@ BS = [
 
 class MSKTokenProvider:
     def token(self):
-        print("Generating MSK IAM token...")
+        logger.info("Generating MSK IAM token...")
         token, expiration = MSKAuthTokenProvider.generate_auth_token('eu-west-1')
-        print("Generated token successfully, expires at:", expiration)
+        logger.info(f"Generated token successfully, expires at: {expiration}")
         return token
 
 
@@ -26,22 +34,24 @@ consumer = KafkaConsumer(
     sasl_mechanism='OAUTHBEARER',
     sasl_oauth_token_provider=tp,
     group_id='my-group',
-    auto_offset_reset='earliest',  # So we get existing messages if not already committed
+    auto_offset_reset='earliest',
 )
 
-# Print available topics
+# Log available topics
 topics = consumer.topics()
-print("Available topics:", topics)
+logger.info(f"Available topics: {topics}")
 
 # Start consuming
-print(f"Consuming messages from topic: {topic}")
+logger.info(f"Consuming messages from topic: {topic}")
 consumer.subscribe([topic])
 
 try:
     for msg in consumer:
-        print("Consumed message:", msg.value.decode())
+        logger.info(f"Consumed message: {msg.value.decode()}")
 except KeyboardInterrupt:
-    print("Stopped consuming.")
+    logger.info("Stopped consuming due to keyboard interrupt.")
+except Exception as e:
+    logger.error(f"Error while consuming messages: {e}")
 finally:
     consumer.close()
-    print("Consumer closed.")
+    logger.info("Consumer closed.")

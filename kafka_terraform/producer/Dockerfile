@@ -2,13 +2,13 @@
 FROM python:3.10-slim
 
 # Set the working directory in the container
-WORKDIR /app
+WORKDIR /producer
 
 # Copy your local project files to the container
-COPY . .
+COPY .. .
 
 # Install dependencies
 RUN pip install -r requirements.txt
 
 # Set the command to run your script
-CMD ["python", "app.py"]
+CMD ["python", "producer.py"]
