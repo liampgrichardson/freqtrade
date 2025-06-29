@@ -84,19 +84,48 @@ resource "aws_security_group" "bastion_sg" {
 }
 
 # MSK IAM role
-resource "aws_iam_role" "msk_broker_role" {
-  name = "MSKBrokerIAMRole"
+resource "aws_iam_role" "msk_client_role" {
+  name = "MSKClientRole"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect = "Allow"
       Principal = {
-        Service = "kafka.amazonaws.com"
+        Service = "ec2.amazonaws.com"
       }
       Action = "sts:AssumeRole"
     }]
   })
+}
+
+resource "aws_iam_role_policy" "msk_client_policy" {
+  name = "MSKClientAccess"
+  role = aws_iam_role.msk_client_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "kafka-cluster:Connect",
+          "kafka-cluster:DescribeTopic",
+          "kafka-cluster:CreateTopic",
+          "kafka-cluster:DescribeGroup",
+          "kafka-cluster:AlterGroup",
+          "kafka-cluster:WriteData",
+          "kafka-cluster:ReadData"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_instance_profile" "bastion_instance_profile" {
+  name = "BastionInstanceProfile"
+  role = aws_iam_role.msk_client_role.name
 }
 
 resource "aws_msk_cluster" "msk" {
@@ -159,6 +188,7 @@ resource "aws_instance" "bastion" {
   instance_type               = "t3.micro"
   subnet_id                   = aws_subnet.public_a.id  # ✅ Use a defined subnet
   security_groups             = [aws_security_group.bastion_sg.id]
+  iam_instance_profile        = aws_iam_instance_profile.bastion_instance_profile.name
   key_name                    = aws_key_pair.bastion_key.key_name
   associate_public_ip_address = true
 
