@@ -24,9 +24,17 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 }
 
-resource "aws_subnet" "public" {
+resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
+  cidr_block              = "10.0.11.0/24"
+  availability_zone       = "eu-west-1a"
+  map_public_ip_on_launch = true
+}
+
+resource "aws_subnet" "public_b" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.12.0/24"
+  availability_zone       = "eu-west-1b"
   map_public_ip_on_launch = true
 }
 
@@ -39,8 +47,13 @@ resource "aws_route_table" "public_rt" {
   }
 }
 
-resource "aws_route_table_association" "public_assoc" {
-  subnet_id      = aws_subnet.public.id
+resource "aws_route_table_association" "public_assoc_a" {
+  subnet_id      = aws_subnet.public_a.id
+  route_table_id = aws_route_table.public_rt.id
+}
+
+resource "aws_route_table_association" "public_assoc_b" {
+  subnet_id      = aws_subnet.public_b.id
   route_table_id = aws_route_table.public_rt.id
 }
 
@@ -92,9 +105,18 @@ resource "aws_msk_cluster" "msk" {
   number_of_broker_nodes = 2
 
   broker_node_group_info {
-    instance_type   = "kafka.t3.small"
-    client_subnets  = [aws_subnet.public.id]
+    instance_type  = "kafka.t3.small"
+    client_subnets = [
+      aws_subnet.public_a.id,
+      aws_subnet.public_b.id
+    ]
     security_groups = [aws_security_group.bastion_sg.id]
+
+    storage_info {
+      ebs_storage_info {
+        volume_size = 20
+      }
+    }
   }
 
   encryption_info {
@@ -114,15 +136,30 @@ resource "aws_msk_cluster" "msk" {
 # Bastion host
 resource "aws_key_pair" "bastion_key" {
   key_name   = "bastion-key"
-  public_key = file("${path.module}/ec2_github_actions_key.pub")
+  public_key = file("${path.module}/ec2_new_key.pub")
+}
+
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
 }
 
 resource "aws_instance" "bastion" {
-  ami                    = "ami-0c7c4e3c6b4941f0f" # Amazon Linux 2 (eu-west-1)
-  instance_type          = "t3.micro"
-  subnet_id              = aws_subnet.public.id
-  security_groups        = [aws_security_group.bastion_sg.name]
-  key_name               = aws_key_pair.bastion_key.key_name
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = "t3.micro"
+  subnet_id                   = aws_subnet.public_a.id  # ✅ Use a defined subnet
+  security_groups             = [aws_security_group.bastion_sg.id]
+  key_name                    = aws_key_pair.bastion_key.key_name
   associate_public_ip_address = true
 
   tags = {

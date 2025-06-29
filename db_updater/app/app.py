@@ -9,10 +9,8 @@ from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
 
 topicname = 'freqtrade-candles'
 
-# BROKERS = 'boot-gfwyfklm.c3.kafka-serverless.eu-west-1.amazonaws.com:9098'
-BROKERS = 'localhost:9098'
+BROKERS = 'boot-gfwyfklm.c3.kafka-serverless.eu-west-1.amazonaws.com:9098'
 region = 'eu-west-1'
-
 
 class MSKTokenProvider:
     @staticmethod
