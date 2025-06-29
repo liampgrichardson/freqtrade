@@ -1,12 +1,37 @@
 import logging
 from freqtrade_client import FtRestClient
-import boto3
 import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta, timezone
 import time
-from decimal import Decimal
-from tqdm import tqdm
+import json
+from kafka import KafkaProducer
+from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
+
+topicname = 'freqtrade-candles'
+
+# BROKERS = 'boot-gfwyfklm.c3.kafka-serverless.eu-west-1.amazonaws.com:9098'
+BROKERS = 'localhost:9098'
+region = 'eu-west-1'
+
+
+class MSKTokenProvider:
+    @staticmethod
+    def token():
+        token, _ = MSKAuthTokenProvider.generate_auth_token(region)
+        return token
+
+
+tp = MSKTokenProvider()
+
+producer = KafkaProducer(
+    bootstrap_servers=BROKERS,
+    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+    retry_backoff_ms=500,
+    request_timeout_ms=20000,
+    security_protocol='SASL_SSL',
+    sasl_mechanism='OAUTHBEARER',
+    sasl_oauth_token_provider=tp)
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -42,112 +67,54 @@ def sleep_until_target_time(scd_last_freqtrade_timestamp: datetime, last_freqtra
         logging.warning(f"Target time {target_time} is in the past. No sleep needed.")
 
 
-# Helper to convert values to DynamoDB-compatible types
-def convert_to_dynamodb_type(value):
-    if pd.isna(value):
-        return None
-    elif isinstance(value, (int, float, np.integer, np.floating)):
-        return Decimal(str(value))
-    elif isinstance(value, Decimal):
-        return value
-    else:
-        return str(value)
-
-
-# Push the data to DynamoDB
-def push_to_dynamodb(df):
-    dynamodb = boto3.resource('dynamodb', region_name='eu-west-2')
-    table = dynamodb.Table('TradingApp-table1')
-
-    with table.batch_writer() as batch:
-        for index, row in tqdm(df.iterrows(), total=len(df), desc="Uploading to DynamoDB"):
-            item = {}
-
-            # Set the partition key
-            item['TradingApp-table1-partitionkey'] = str(index)
-
-            # Include index as timestamp if it's datetime-like
-            item['timestamp'] = str(index)
-
-            # Add all columns dynamically
-            for col in df.columns:
-                value = convert_to_dynamodb_type(row[col])
-                if value is not None:
-                    item[col] = value
-
-            batch.put_item(Item=item)
+def send_to_kafka(df_row):
+    """
+    Send a single DataFrame row to Kafka as JSON
+    """
+    record = df_row.to_dict(orient='records')[0]  # convert single row to dict
+    producer.send(topicname, value=record)
+    producer.flush()
 
 
 def main():
-
-    # initialize freqtrade stuff
     freqtrade_client = FtRestClient("http://127.0.0.1:8080", "freqtrader", "1234")
     strategy = "SampleStrategy"
     strategy_timeframe = freqtrade_client.strategy(strategy)["timeframe"]
     pair = "BTC/USDT"
 
-    # get the status of the bot (should log "pong" if ok)
     logging.info(freqtrade_client.ping())
 
-    # get data from freqtrade
     candles = None
     while candles is None:
         try:
             candles = freqtrade_client.pair_candles(pair, strategy_timeframe, 10)
         except Exception as e:
             logging.error(f"Failed to fetch candles: \n{e}", exc_info=True)
-            time.sleep(5)  # wait a bit before retrying
-
-    # convert the response to a DataFrame
-    columns = candles['columns']
-    data = candles['data']
-    df = pd.DataFrame(data, columns=columns)
-    df['date'] = pd.to_datetime(df['date'])
-    df.set_index('date', inplace=True)
-
-    # get last datetime from freqtrade df
-    last_freqtrade_timestamp = df.index[-1]  # Last index
-    scd_last_freqtrade_timestamp = df.index[-2]  # Second last index
-
-    # push to dynamodb
-    try:
-        push_to_dynamodb(df)
-        logging.info(f"Timestamp of last pushed to dynamoDB         : {df.index[-1]}")
-    except Exception as e:
-        logging.error(f"Failed to push data to DynamoDB: {e}", exc_info=True)
+            time.sleep(5)
 
     while True:
         logging.info("Starting loop")
 
-        # wait for correct time to proceed in loop
-        sleep_until_target_time(scd_last_freqtrade_timestamp, last_freqtrade_timestamp)
-
-        # get data from freqtrade
         try:
             candles = freqtrade_client.pair_candles(pair, strategy_timeframe, 10)
-
-            # convert the response to a DataFrame
             columns = candles['columns']
             data = candles['data']
             df = pd.DataFrame(data, columns=columns)
             df['date'] = pd.to_datetime(df['date'])
             df.set_index('date', inplace=True)
 
-            # Get last datetime from freqtrade df
-            last_freqtrade_timestamp = df.index[-1]  # Last index
-            scd_last_freqtrade_timestamp = df.index[-2]  # Second last index
+            last_freqtrade_timestamp = df.index[-1]
+            scd_last_freqtrade_timestamp = df.index[-2]
+
+            send_to_kafka(df.iloc[[-1]])
+            logging.info(f"Timestamp of last sent to Kafka: {df.index[-1]}")
+
+            sleep_until_target_time(scd_last_freqtrade_timestamp, last_freqtrade_timestamp)
 
         except Exception as e:
-            logging.error(f"Failed to fetch or format candles: \n{e}", exc_info=True)
-            time.sleep(5)  # wait a bit before continuing
+            logging.error(f"Failed to fetch or format candles or send data: \n{e}", exc_info=True)
+            time.sleep(5)
             continue
-
-        # push to dynamodb
-        try:
-            push_to_dynamodb(df.iloc[[-1]])
-            logging.info(f"Timestamp of last pushed to dynamoDB         : {df.index[-1]}")
-        except Exception as e:
-            logging.error(f"Failed to push data to DynamoDB: {e}", exc_info=True)
 
 
 if __name__ == "__main__":
