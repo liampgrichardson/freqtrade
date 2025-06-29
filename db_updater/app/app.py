@@ -12,6 +12,7 @@ topicname = 'freqtrade-candles'
 BROKERS = 'boot-gfwyfklm.c3.kafka-serverless.eu-west-1.amazonaws.com:9098'
 region = 'eu-west-1'
 
+
 class MSKTokenProvider:
     @staticmethod
     def token():

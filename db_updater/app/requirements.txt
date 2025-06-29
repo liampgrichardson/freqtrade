@@ -2,3 +2,5 @@ boto3
 freqtrade-client
 pandas
 tqdm
+kafka-python
+aws-msk-iam-sasl-signer-python
